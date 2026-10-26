@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agile Software Delivery & Governance Dashboard</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for enterprise Power BI charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            pbi: {
+              yellow: '#F2C811',
+              dark: '#1B1A19',
+              ribbon: '#201F1E',
+              border: '#E1DFDD',
+              subtle: '#F3F2F1',
+              teal: '#008272',
+              blue: '#0078D4',
+              orange: '#D83B01',
+              purple: '#5C2D91',
+              red: '#A80000',
+              gray: '#605E5C',
+              cardBg: '#FFFFFF',
+              canvas: '#EAE8E6',
+              accent: '#107C41'
+            }
+          },
+          fontFamily: {
+            segoe: ['"Segoe UI"', '-apple-system', 'BlinkMacSystemFont', 'Roboto', 'Helvetica Neue', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      user-select: none;
+    }
+    /* Custom Scrollbar for Power BI authenticity */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c7c5c3;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #8a8886;
+    }
+    .pbi-card {
+      background-color: #ffffff;
+      border-radius: 4px;
+      box-shadow: 0 1.6px 3.6px 0 rgba(0,0,0,0.132), 0 0.3px 0.9px 0 rgba(0,0,0,0.108);
+      border: 1px solid #edebe9;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .pbi-card:hover {
+      box-shadow: 0 3.2px 7.2px 0 rgba(0,0,0,0.132), 0 0.6px 1.8px 0 rgba(0,0,0,0.108);
+    }
+    .pbi-tab {
+      position: relative;
+    }
+    .pbi-tab.active {
+      background-color: #ffffff;
+      color: #201f1e;
+      font-weight: 600;
+      border-top: 3px solid #f2c811;
+    }
+  </style>
+</head>
+<body class="bg-[#F3F2F1] text-[#201F1E] h-screen flex flex-col overflow-hidden">
+
+  <!-- ================= TOP POWER BI RIBBON & SERVICE HEADER ================= -->
+  <header class="bg-[#201F1E] text-white flex flex-col flex-shrink-0 z-30 shadow-md">
+    <!-- Top Service Bar -->
+    <div class="h-10 px-4 flex items-center justify-between border-b border-[#323130] text-xs">
+      <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-2 font-semibold text-sm">
+          <span class="w-6 h-6 bg-[#F2C811] text-[#1B1A19] font-black rounded flex items-center justify-center text-xs shadow">PB</span>
+          <span class="tracking-wide">Power BI Service</span>
+        </div>
+        <span class="text-neutral-500">|</span>
+        <div class="flex items-center space-x-1.5 text-neutral-300">
+          <span class="text-neutral-400">Workspace / Delivery Governance /</span>
+          <span class="text-white font-medium flex items-center gap-1">
+            Agile Delivery & DevOps Analytics
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+          </span>
+        </div>
+        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">PROD REPLICA</span>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <div class="flex items-center bg-[#292827] px-2 py-1 rounded border border-[#3b3a39] text-neutral-300 text-xs">
+          <i data-lucide="clock" class="w-3.5 h-3.5 mr-1.5 text-[#F2C811]"></i>
+          <span>Data refreshed: <span id="lastRefreshedTime">Just now</span></span>
+        </div>
+        <button id="refreshBtn" class="flex items-center gap-1 hover:bg-[#323130] px-2.5 py-1 rounded transition text-xs font-medium" title="Trigger Refresh">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>Refresh</span>
+        </button>
+        <button id="exportBtn" class="flex items-center gap-1 hover:bg-[#323130] px-2.5 py-1 rounded transition text-xs font-medium" title="Export to PDF / PowerPoint">
+          <i data-lucide="file-down" class="w-3.5 h-3.5"></i>
+          <span>Export</span>
+        </button>
+        <div class="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-xs ring-2 ring-neutral-600">
+          PO
+        </div>
+      </div>
+    </div>
+
+    <!-- Power BI Action Ribbon Toolbar -->
+    <div class="h-10 px-4 flex items-center justify-between bg-[#2B2A28] border-b border-[#3b3a39] text-xs">
+      <div class="flex items-center space-x-2">
+        <span class="text-neutral-400 flex items-center gap-1 font-medium">
+          <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-[#F2C811]"></i> Active Slicers:
+        </span>
+        <div id="activeSlicerPills" class="flex items-center space-x-1.5 overflow-x-auto py-1">
+          <!-- Dynamically populated filter chips -->
+        </div>
+      </div>
+      
+      <div class="flex items-center space-x-2">
+        <button id="resetFiltersBtn" class="text-neutral-300 hover:text-white hover:underline flex items-center gap-1 text-[11px]">
+          <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Clear all filters
+        </button>
+        <div class="h-4 w-px bg-neutral-600 mx-1"></div>
+        <button id="toggleFilterPaneBtn" class="bg-[#3b3a39] hover:bg-[#484644] text-white px-2 py-0.5 rounded text-[11px] flex items-center gap-1">
+          <i data-lucide="filter" class="w-3 h-3"></i>
+          <span id="filterPaneBtnText">Hide Filters</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MAIN BODY: CANVAS & SLICER SIDEBAR ================= -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- CANVAS AREA -->
+    <main class="flex-1 overflow-y-auto p-3.5 space-y-3.5 bg-[#F3F2F1]" id="mainCanvas">
+
+      <!-- TOP EXECUTIVE KPI CARDS ROW -->
+      <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        
+        <!-- KPI 1: Sprint Completion -->
+        <div class="pbi-card p-3 border-l-4 border-l-[#0078D4] flex flex-col justify-between">
+          <div class="flex items-center justify-between text-neutral-500 text-[11px] font-semibold uppercase tracking-wider">
+            <span>Sprint Completion</span>
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-[#0078D4]"></i>
+          </div>
+          <div class="mt-1 flex items-baseline justify-between">
+            <span class="text-2xl font-bold text-neutral-900" id="kpiCompletion">88.4%</span>
+            <span class="text-[11px] font-bold text-emerald-600 flex items-center" id="kpiCompletionTrend">
+              <i data-lucide="trending-up" class="w-3 h-3 mr-0.5"></i> +4.2%
+            </span>
+          </div>
+          <div class="w-full bg-neutral-200 h-1.5 rounded-full overflow-hidden mt-1.5">
+            <div id="kpiCompletionBar" class="bg-[#0078D4] h-full rounded-full transition-all duration-500" style="width: 88.4%"></div>
+          </div>
+          <div class="text-[10px] text-neutral-500 mt-1 flex justify-between">
+            <span id="kpiPointsSub">115 / 130 pts</span>
+            <span>Target: 85%</span>
+          </div>
+        </div>
+
+        <!-- KPI 2: Velocity (Actual vs Committed) -->
+        <div class="pbi-card p-3 border-l-4 border-l-[#107C41] flex flex-col justify-between">
+          <div class="flex items-center justify-between text-neutral-500 text-[11px] font-semibold uppercase tracking-wider">
+            <span>Velocity</span>
+            <i data-lucide="zap" class="w-4 h-4 text-[#107C41]"></i>
+          </div>
+          <div class="mt-1 flex items-baseline justify-between">
+            <span class="text-2xl font-bold text-neutral-900" id="kpiVelocity">115 <span class="text-xs font-normal text-neutral-500">pts</span></span>
+            <span class="text-[11px] font-semibold text-neutral-600" id="kpiCommitted">Committed: 130</span>
+          </div>
+          <div class="text-[11px] text-neutral-500 mt-1 flex items-center justify-between">
+            <span>Say/Do Ratio:</span>
+            <span class="font-bold text-neutral-800" id="kpiSayDo">88.5%</span>
+          </div>
+          <div class="text-[10px] text-emerald-700 font-medium mt-0.5">
+            Avg (Last 5 Sprints): 108 pts
+          </div>
+        </div>
+
+        <!-- KPI 3: Lead Time & Cycle Time -->
+        <div class="pbi-card p-3 border-l-4 border-l-[#5C2D91] flex flex-col justify-between">
+          <div class="flex items-center justify-between text-neutral-500 text-[11px] font-semibold uppercase tracking-wider">
+            <span>Cycle / Lead Time</span>
+            <i data-lucide="timer" class="w-4 h-4 text-[#5C2D91]"></i>
+          </div>
+          <div class="mt-1 flex items-baseline justify-between">
+            <span class="text-2xl font-bold text-neutral-900" id="kpiCycleTime">4.8 <span class="text-xs font-normal text-neutral-500">days</span></span>
+            <span class="text-[11px] font-bold text-emerald-600 flex items-center">
+              <i data-lucide="arrow-down-right" class="w-3 h-3 mr-0.5"></i> -0.6d
+            </span>
+          </div>
+          <div class="text-[11px] text-neutral-500 mt-1 flex justify-between">
+            <span>Lead Time:</span>
+            <span class="font-semibold text-neutral-800" id="kpiLeadTime">9.4 days</span>
+          </div>
+          <div class="text-[10px] text-neutral-500 mt-0.5">Industry Benchmark: 5.5d</div>
+        </div>
+
+        <!-- KPI 4: Work in Progress (WIP) -->
+        <div class="pbi-card p-3 border-l-4 border-l-[#D83B01] flex flex-col justify-between">
+          <div class="flex items-center justify-between text-neutral-500 text-[11px] font-semibold uppercase tracking-wider">
+            <span>Current WIP</span>
+            <i data-lucide="kanban" class="w-4 h-4 text-[#D83B01]"></i>
+          </div>
+          <div class="mt-1 flex items-baseline justify-between">
+            <span class="text-2xl font-bold text-neutral-900" id="kpiWip">14 <span class="text-xs font-normal text-neutral-500">items</span></span>
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300" id="kpiWipStatus">Limit: 16</span>
+          </div>
+          <div class="text-[11px] text-neutral-500 mt-1 flex justify-between">
+            <span>Active Swarms:</span>
+            <span class="font-semibold text-neutral-800">3 stories</span>
+          </div>
+          <div class="text-[10px] text-neutral-500 mt-0.5">WIP Stability: 92% healthy</div>
+        </div>
+
+        <!-- KPI 5: Escaped Defect Density -->
+        <div class="pbi-card p-3 border-l-4 border-l-[#A80000] flex flex-col justify-between">
+          <div class="flex items-center justify-between text-neutral-500 text-[11px] font-semibold uppercase tracking-wider">
+            <span>Bug Density / Escaped</span>
+            <i data-lucide="bug" class="w-4 h-4 text-[#A80000]"></i>
+          </div>
+          <div class="mt-1 flex items-baseline justify-between">
+            <span class="text-2xl font-bold text-neutral-900" id="kpiDefects">3 <span class="text-xs font-normal text-neutral-500">bugs</span></span>
+            <span class="text-[11px] font-bold text-emerald-600 flex items-center">
+              <i data-lucide="arrow-down-right" class="w-3 h-3 mr-0.5"></i> -2
+            </span>
+          </div>
+          <div class="text-[11px] text-neutral-500 mt-1 flex justify-between">
+            <span>Density / 100 SP:</span>
+            <span class="font-semibold text-neutral-800" id="kpiDensity">2.6</span>
+          </div>
+          <div class="text-[10px] text-neutral-500 mt-0.5">0 Sev-1 blockers in Prod</div>
+        </div>
+
+        <!-- KPI 6: Release Readiness & Quality Gate -->
+        <div class="pbi-card p-3 border-l-4 border-l-[#008272] flex flex-col justify-between">
+          <div class="flex items-center justify-between text-neutral-500 text-[11px] font-semibold uppercase tracking-wider">
+            <span>Release Readiness</span>
+            <i data-lucide="rocket" class="w-4 h-4 text-[#008272]"></i>
+          </div>
+          <div class="mt-1 flex items-baseline justify-between">
+            <span class="text-2xl font-bold text-emerald-700" id="kpiReadiness">94%</span>
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">PASS</span>
+          </div>
+          <div class="text-[11px] text-neutral-500 mt-1 flex justify-between">
+            <span>Test Coverage:</span>
+            <span class="font-semibold text-neutral-800">86.2%</span>
+          </div>
+          <div class="text-[10px] text-neutral-500 mt-0.5">CI/CD Pipeline: All Green</div>
+        </div>
+
+      </section>
+
+      <!-- ================= PAGE TAB CONTENTS ================= -->
+
+      <!-- TAB 1: SPRINT OVERVIEW -->
+      <div id="tabContent-sprint" class="space-y-3.5">
+        <!-- Row 1: Burndown & Work Item Distribution -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+          <!-- Burndown Chart (8 cols) -->
+          <div class="lg:col-span-8 pbi-card p-4 flex flex-col justify-between">
+            <div class="flex items-center justify-between border-b border-neutral-100 pb-2 mb-2">
+              <div>
+                <h3 class="text-sm font-bold text-neutral-800 flex items-center gap-1.5">
+                  <i data-lucide="trending-down" class="w-4 h-4 text-[#0078D4]"></i>
+                  Sprint Burndown Progress (Ideal vs Actual Remaining Points)
+                </h3>
+                <p class="text-[11px] text-neutral-500">Day-by-day story points tracking with scope change detection</p>
+              </div>
+              <div class="flex items-center space-x-3 text-xs">
+                <span class="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-600">
+                  <span class="w-3 h-0.5 bg-neutral-400 border-dashed inline-block"></span> Ideal Guideline
+                </span>
+                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0078D4]">
+                  <span class="w-3 h-3 bg-[#0078D4] rounded-sm inline-block"></span> Actual Remaining
+                </span>
+              </div>
+            </div>
+            <div class="h-64 w-full relative">
+              <canvas id="burndownChart"></canvas>
+            </div>
+            <div class="mt-2 text-xs bg-neutral-50 p-2 rounded border border-neutral-200 flex justify-between items-center text-neutral-600">
+              <span class="flex items-center gap-1 text-[11px]">
+                <i data-lucide="info" class="w-3.5 h-3.5 text-blue-600"></i>
+                <strong>Status Note:</strong> Team added +8 pts mid-sprint on Day 4 (CR-889 Security Patch). Currently 3 pts ahead of pace.
+              </span>
+              <span class="text-[11px] font-bold text-neutral-700">Sprint Day 8 of 10</span>
+            </div>
+          </div>
+
+          <!-- Epic / Component Distribution (4 cols) -->
+          <div class="lg:col-span-4 pbi-card p-4 flex flex-col justify-between">
+            <div class="border-b border-neutral-100 pb-2 mb-2 flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-bold text-neutral-800 flex items-center gap-1.5">
+                  <i data-lucide="pie-chart" class="w-4 h-4 text-[#107C41]"></i>
+                  Effort by Epic / Component
+                </h3>
+                <p class="text-[11px] text-neutral-500">Story points allocation by architectural theme</p>
+              </div>
+              <span class="text-xs font-semibold px-2 py-0.5 bg-neutral-100 rounded text-neutral-600">SP Total: 130</span>
+            </div>
+            <div class="h-56 w-full relative flex items-center justify-center">
+              <canvas id="epicDistributionChart"></canvas>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-neutral-100 text-xs">
+              <div class="flex items-center justify-between text-neutral-600 text-[11px]">
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#0078D4]"></span> Checkout 2.0</span>
+                <span class="font-bold">42 pts</span>
+              </div>
+              <div class="flex items-center justify-between text-neutral-600 text-[11px]">
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#107C41]"></span> Cloud Auth</span>
+                <span class="font-bold">34 pts</span>
+              </div>
+              <div class="flex items-center justify-between text-neutral-600 text-[11px]">
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#F2C811]"></span> Mobile Sync</span>
+                <span class="font-bold">28 pts</span>
+              </div>
+              <div class="flex items-center justify-between text-neutral-600 text-[11px]">
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#D83B01]"></span> Tech Debt</span>
+                <span class="font-bold">26 pts</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2: Live Sprint Work Item Grid (Drill-down Data Table) -->
+        <div class="pbi-card p-4">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-neutral-100 pb-3 mb-3 gap-2">
+            <div>
+              <h3 class="text-sm font-bold text-neutral-800 flex items-center gap-1.5">
+                <i data-lucide="list-checks" class="w-4 h-4 text-[#5C2D91]"></i>
+                Sprint Backlog & Task Execution Board (Drill-down)
+              </h3>
+              <p class="text-[11px] text-neutral-500">Live work items linked to pull requests, cycle days, and approval gates</p>
+            </div>
+            <div class="flex items-center space-x-2 w-full sm:w-auto">
+              <div class="relative flex-1 sm:flex-initial">
+                <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-neutral-400"></i>
+                <input type="text" id="tableSearch" placeholder="Search key, title, assignee..." class="text-xs pl-8 pr-3 py-1.5 border border-neutral-300 rounded focus:outline-none focus:ring-1 focus:ring-[#0078D4] w-full sm:w-60">
+              </div>
+              <select id="statusFilterTable" class="text-xs py-1.5 px-2 border border-neutral-300 rounded bg-white text-neutral-700">
+                <option value="ALL">All Statuses</option>
+                <option value="Done">Done</option>
+                <option value="In QA">In QA</option>
+                <option value="Code Review">Code Review</option>
+                <option value="In Progress">In Progress</option>
+                <option value="To Do">To Do</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Table Container with Power BI Table styling -->
+          <div class="overflow-x-auto max-h-72 border border-neutral-200 rounded">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-[#F3F2F1] text-neutral-700 font-semibold sticky top-0 z-10 border-b border-neutral-300">
+                <tr>
+                  <th class="py-2.5 px-3">Key</th>
+                  <th class="py-2.5 px-3">Title & Summary</th>
+                  <th class="py-2.5 px-3">Epic</th>
+                  <th class="py-2.5 px-3">Type</th>
+                  <th class="py-2.5 px-3">Priority</th>
+                  <th class="py-2.5 px-3 text-center">SP</th>
+                  <th class="py-2.5 px-3">Status</th>
+                  <th class="py-2.5 px-3">Assignee</th>
+                  <th class="py-2.5 px-3 text-center">Cycle Time</th>
+                  <th class="py-2.5 px-3">GitHub PR</th>
+                </tr>
+              </thead>
+              <tbody id="workItemsTableBody" class="divide-y divide-neutral-200 bg-white">
+                <!-- Dynamically injected rows -->
+              </tbody>
+            </table>
+          </div>
+          <div class="flex items-center justify-between text-neutral-500 text-[11px] mt-2 px-1">
+            <span id="tableRecordCount">Showing 8 of 8 items</span>
+            <span class="flex items-center gap-1"><i data-lucide="shield" class="w-3 h-3 text-neutral-400"></i> Synced with Jira & GitHub Enterprise API</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: VELOCITY & FLOW (CFD) -->
+      <div id="tabContent-velocity" class="hidden space-y-3.5">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+          <!-- Velocity Chart (6 Sprints) -->
+          <div class="lg:col-span-6 pbi-card p-4 flex flex-col justify-between">
+            <div class="border-b border-neutral-100 pb-2 mb-2 flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-bold text-neutral-800 flex items-center gap-1.5">
+                  <i data-lucide="bar-chart-3" class="w-4 h-4 text-[#0078D4]"></i>
+                  Team Velocity History (Committed vs Delivered)
+                </h3>
+                <p class="text-[11px] text-neutral-500">Historical predictability and sprint delivery consistency</p>
+              </div>
+              <span class="text-xs font-semibold px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded">
+                Rolling Avg: 112 SP
+              </span>
+            </div>
+            <div class="h-64 w-full relative">
+              <canvas id="velocityChart"></canvas>
+            </div>
+            <div class="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-neutral-100 text-center text-xs">
+              <div class="bg-neutral-50 p-2 rounded">
+                <span class="text-[10px] text-neutral-500 block">Say/Do Ratio (Avg)</span>
+                <span class="font-bold text-neutral-800 text-sm">91.3%</span>
+              </div>
+              <div class="bg-neutral-50 p-2 rounded">
+                <span class="text-[10px] text-neutral-500 block">Std Deviation</span>
+                <span class="font-bold text-neutral-800 text-sm">± 6.4 SP</span>
+              </div>
+              <div class="bg-neutral-50 p-2 rounded">
+                <span class="text-[10px] text-neutral-500 block">Scope Churn Rate</span>
+                <span class="font-bold text-emerald-600 text-sm">4.8% (Low)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cumulative Flow Diagram (CFD) -->
+          <div class="lg:col-span-6 pbi-card p-4 flex flex-col justify-between">
+            <div class="border-b border-neutral-100 pb-2 mb-2 flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-bold text-neutral-800 flex items-center gap-1.5">
+                  <i data-lucide="waves" class="w-4 h-4 text-[#107C41]"></i>
+                  Cumulative Flow Diagram (CFD)
+                </h3>
+                <p class="text-[11px] text-neutral-500">Detect bottlenecks, queue swelling & process flow stability</p>
+              </div>
+              <span class="text-[11px] px-2 py-0.5 bg-neutral-100 rounded text-neutral-600 font-medium">14 Days Window</span>
+            </div>
+            <div class="h-64 w-full relative">
+              <canvas id="cfdChart"></canvas>
+            </div>
+            <div class="flex items-center justify-between mt-2 pt-2 border-t border-neutral-100 text-[11px] text-neutral-600">
+              <span class="flex items-center gap-1"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-600"></i> No bottleneck detected in Code Review</span>
+              <span class="font-semibold text-neutral-700">WIP Law compliant (Little's Law W=L/λ)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cycle Time Distribution Scatter Breakdown -->
+        <div class="pbi-card p-4">
+          <div class="border-b border-neutral-100 pb-2 mb-2 flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-neutral-800 flex items-center gap-1.5">
+                <i data-lucide="clock-4" class="w-4 h-4 text-[#5C2D91]"></i>
+                Cycle Time Breakdown by Workflow Stage (Hours in Stage)
+              </h3>
+              <p class="text-[11px] text-neutral-500">Time spent in Analysis, Development, Peer Review, and QA Acceptance</p>
+            </div>
+            <div class="text-xs text-neutral-500">Target SLA: Total &lt; 5.0 Days</div>
+          </div>
+          <div class="h-52 w-full relative">
+            <canvas id="stageDurationChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: QUALITY & DEFECTS -->
+      <div id="tabContent-quality" class="hidden space-y-3.5">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+          <!-- Defect Severity Breakdown (Donut) -->
+          <div class="lg:col-span-4 pbi-card p-4 flex flex-col justify-between">
+            <div class="border-b border-neutral-100 pb-2 mb-2">
+              <h3 class="text-sm font-bold text-neutral-800 flex items-center gap-1.5">
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-[#A80000]"></i>
+                Defects by Severity
+              </h3>
+              <p class="text-[11px] text-neutral-500">Active and resolved defects this sprint</p>
+            </div>
+            <div class="h-56 w-full relative flex items-center justify-center">
+              <canvas id="defectSeverityChart"></canvas>
+            </div>
+            <div class="mt-2 text-xs space-y-1">
+              <div class="flex justify-between items-center text-neutral-700">
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#A80000]"></span> Critical (Sev 1)</span>
+                <span class="font-bold">0 Active (SLA Met)</span>
+              </div>
+              <div class="flex justify-between items-center text-neutral-700">
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#D83B01]"></span> Major (Sev 2)</span>
+                <span class="font-bold">2 Active</span>
+              </div>
+              <div class="flex justify-between items-center text-neutral-700">
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#F2C811]"></span> Minor (Sev 3)</span>
+                <span class="font-bold">4 Active</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mean Time to Resolution (MTTR) by Component -->
+          <div class="lg:col-span-8 pbi-card p-4 flex flex-col justify-between">
+            <div class="border-b border-neutral-100 pb-2 mb-2 flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-bold text-neutral-800 flex items-center gap-1.5">
+                  <i data-lucide="gauge" class="w-4 h-4 text-[#0078D4]"></i>
+                  Mean Time to Resolve (MTTR) by Squad & Component (Hours)
+                </h3>
+                <p class="text-[11px] text-neutral-500">Average duration to triage, patch, and release hotfixes</p>
+              </div>
+              <span class="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded font-semibold">
+                Org SLA: &lt; 24h
+              </span>
+            </div>
+            <div class="h-60 w-full relative">
+              <canvas id="mttrBarChart"></canvas>
+            </div>
+            <div class="mt-2 text-[11px] text-neutral-500 flex justify-between">
+              <span>Overall MTTR: <strong>14.2 Hours</strong></span>
+              <span class="text-emerald-700 font-semibold flex items-center gap-1">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> 100% Sev-1 SLA compliance
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Automated Quality Gates & SonarQube Badges -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div class="pbi-card p-3 border-t-2 border-emerald-500">
+            <span class="text-[11px] text-neutral-500 font-medium">Unit Test Code Coverage</span>
+            <div class="text-xl font-bold text-neutral-800 mt-1">87.4%</div>
+            <div class="text-[10px] text-emerald-600 mt-0.5">Threshold: &gt; 80% (PASSED)</div>
+          </div>
+          <div class="pbi-card p-3 border-t-2 border-emerald-500">
+            <span class="text-[11px] text-neutral-500 font-medium">Technical Debt Ratio</span>
+            <div class="text-xl font-bold text-neutral-800 mt-1">3.1%</div>
+            <div class="text-[10px] text-emerald-600 mt-0.5">Rating: A (SonarQube)</div>
+          </div>
+          <div class="pbi-card p-3 border-t-2 border-emerald-500">
+            <span class="text-[11px] text-neutral-500 font-medium">Security Vulnerabilities</span>
+            <div class="text-xl font-bold text-neutral-800 mt-1">0 High / 1 Med</div>
+            <div class="text-[10px] text-neutral-600 mt-0.5">Snyk scans passing</div>
+          </div>
+          <div class="pbi-card p-3 border-t-2 border-emerald-500">
+            <span class="text-[11px] text-neutral-500 font-medium">Automated Regression Suite</span>
+            <div class="text-xl font-bold text-neutral-800 mt-1">99.2%</div>
+            <div class="text-[10px] text-neutral-600 mt-0.5">418 of 421 tests passed</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: RELEASE & DELIVERY ROADMAP -->
+      <div id="tabContent-roadmap" class="hidden space-y-3.5">
+        <div class="pbi-card p-4">
+          <div class="border-b border-neutral-100 pb-2 mb-3 flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-neutral-800 flex items-center gap-1.5">
+                <i data-lucide="milestone" class="w-4 h-4 text-[#008272]"></i>
+                Quarterly Delivery Milestones & Epic Progress Roadmap
+              </h3>
+              <p class="text-[11px] text-neutral-500">Program increment delivery schedule and target deployment dates</p>
+            </div>
+            <div class="flex items-center space-x-2 text-xs">
+              <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-medium text-[10px]">On Track</span>
+              <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-medium text-[10px]">At Risk</span>
+              <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-medium text-[10px]">Completed</span>
+            </div>
+          </div>
+
+          <!-- Gantt-style Roadmap Table -->
+          <div class="space-y-3">
+            <!-- Epic 1 -->
+            <div class="border border-neutral-200 rounded p-3 bg-neutral-50/50">
+              <div class="flex items-center justify-between text-xs mb-1.5">
+                <div class="flex items-center space-x-2">
+                  <span class="font-bold text-neutral-800">EPIC-101: Modernized Stripe & PayPal Checkout API</span>
+                  <span class="px-1.5 py-0.2 rounded text-[10px] bg-blue-100 text-blue-700 font-semibold">Backend & Frontend</span>
+                </div>
+                <div class="flex items-center space-x-3 text-[11px]">
+                  <span class="text-neutral-500">Target: Sprint 24 (Oct 28)</span>
+                  <span class="font-bold text-emerald-600">92% Done</span>
+                </div>
+              </div>
+              <div class="w-full bg-neutral-200 h-2.5 rounded-full overflow-hidden">
+                <div class="bg-emerald-600 h-full rounded-full" style="width: 92%"></div>
+              </div>
+              <div class="flex justify-between items-center text-[10px] text-neutral-500 mt-1">
+                <span>Completed 42 of 46 story points</span>
+                <span>Stage: Canary Deployment in Staging</span>
+              </div>
+            </div>
+
+            <!-- Epic 2 -->
+            <div class="border border-neutral-200 rounded p-3 bg-neutral-50/50">
+              <div class="flex items-center justify-between text-xs mb-1.5">
+                <div class="flex items-center space-x-2">
+                  <span class="font-bold text-neutral-800">EPIC-104: Zero-Trust OAuth 2.1 & Multi-Tenant SSO</span>
+                  <span class="px-1.5 py-0.2 rounded text-[10px] bg-purple-100 text-purple-700 font-semibold">Platform Squad</span>
+                </div>
+                <div class="flex items-center space-x-3 text-[11px]">
+                  <span class="text-neutral-500">Target: Sprint 25 (Nov 11)</span>
+                  <span class="font-bold text-neutral-700">68% Done</span>
+                </div>
+              </div>
+              <div class="w-full bg-neutral-200 h-2.5 rounded-full overflow-hidden">
+                <div class="bg-blue-600 h-full rounded-full" style="width: 68%"></div>
+              </div>
+              <div class="flex justify-between items-center text-[10px] text-neutral-500 mt-1">
+                <span>Completed 34 of 50 story points</span>
+                <span>Stage: Internal Security Audit & Penetration Review</span>
+              </div>
+            </div>
+
+            <!-- Epic 3 -->
+            <div class="border border-neutral-200 rounded p-3 bg-neutral-50/50">
+              <div class="flex items-center justify-between text-xs mb-1.5">
+                <div class="flex items-center space-x-2">
+                  <span class="font-bold text-neutral-800">EPIC-108: Mobile Offline Sync Engine (React Native)</span>
+                  <span class="px-1.5 py-0.2 rounded text-[10px] bg-amber-100 text-amber-700 font-semibold">Mobile Squad</span>
+                </div>
+                <div class="flex items-center space-x-3 text-[11px]">
+                  <span class="text-neutral-500">Target: Sprint 26 (Nov 25)</span>
+                  <span class="font-bold text-amber-600">45% Done (At Risk)</span>
+                </div>
+              </div>
+              <div class="w-full bg-neutral-200 h-2.5 rounded-full overflow-hidden">
+                <div class="bg-amber-500 h-full rounded-full" style="width: 45%"></div>
+              </div>
+              <div class="flex justify-between items-center text-[10px] text-neutral-500 mt-1">
+                <span>Completed 18 of 40 story points</span>
+                <span class="text-amber-700 font-medium">Risk: SQLite SQLite3 encryption migration delay</span>
+              </div>
+            </div>
+
+            <!-- Epic 4 -->
+            <div class="border border-neutral-200 rounded p-3 bg-neutral-50/50">
+              <div class="flex items-center justify-between text-xs mb-1.5">
+                <div class="flex items-center space-x-2">
+                  <span class="font-bold text-neutral-800">EPIC-112: Core DB Partitioning & Read Replica Cluster</span>
+                  <span class="px-1.5 py-0.2 rounded text-[10px] bg-red-100 text-red-700 font-semibold">Database Ops</span>
+                </div>
+                <div class="flex items-center space-x-3 text-[11px]">
+                  <span class="text-neutral-500">Target: Sprint 27 (Dec 09)</span>
+                  <span class="font-bold text-neutral-600">20% Done</span>
+                </div>
+              </div>
+              <div class="w-full bg-neutral-200 h-2.5 rounded-full overflow-hidden">
+                <div class="bg-neutral-500 h-full rounded-full" style="width: 20%"></div>
+              </div>
+              <div class="flex justify-between items-center text-[10px] text-neutral-500 mt-1">
+                <span>Completed 8 of 40 story points</span>
+                <span>Stage: Schema Architecture RFC Approved</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Release Health Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <div class="pbi-card p-3.5">
+            <h4 class="text-xs font-bold text-neutral-700 mb-1">Release Cadence</h4>
+            <div class="text-xl font-bold text-neutral-900">Bi-Weekly on Wednesdays</div>
+            <p class="text-[11px] text-neutral-500 mt-1">Automated blue/green deployment strategy via Azure DevOps Pipelines.</p>
+          </div>
+          <div class="pbi-card p-3.5">
+            <h4 class="text-xs font-bold text-neutral-700 mb-1">Rollback Rate</h4>
+            <div class="text-xl font-bold text-emerald-600">0.0% (Last 12 Releases)</div>
+            <p class="text-[11px] text-neutral-500 mt-1">Zero customer impact rollbacks recorded during current quarter.</p>
+          </div>
+          <div class="pbi-card p-3.5">
+            <h4 class="text-xs font-bold text-neutral-700 mb-1">Change Failure Rate (DORA)</h4>
+            <div class="text-xl font-bold text-neutral-900">4.1% <span class="text-xs font-normal text-emerald-600">(Elite Tier)</span></div>
+            <p class="text-[11px] text-neutral-500 mt-1">Meets highest tier industry standards for high-velocity teams.</p>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ================= RIGHT POWER BI SLICER / FILTER PANE ================= -->
+    <aside id="filterPane" class="w-72 bg-[#FAF9F8] border-l border-[#E1DFDD] flex flex-col flex-shrink-0 z-20 shadow-sm transition-all duration-300">
+      <!-- Pane Header -->
+      <div class="p-3 border-b border-[#E1DFDD] flex items-center justify-between bg-[#F3F2F1]">
+        <div class="flex items-center space-x-1.5 font-bold text-xs text-neutral-800 uppercase tracking-wider">
+          <i data-lucide="filter" class="w-3.5 h-3.5 text-[#0078D4]"></i>
+          <span>Filters Pane</span>
+        </div>
+        <button id="collapseFiltersCross" class="text-neutral-500 hover:text-neutral-800 p-1">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Filters Body -->
+      <div class="p-3.5 overflow-y-auto space-y-4 text-xs flex-1">
+
+        <!-- Slicer 1: Sprint Selection -->
+        <div class="bg-white p-3 rounded border border-neutral-200 shadow-2xs">
+          <label class="block font-bold text-neutral-700 mb-1 text-[11px] uppercase tracking-wide">
+            Sprint Slicer (Iteration)
+          </label>
+          <select id="sprintSelect" class="w-full p-2 border border-neutral-300 rounded text-xs bg-white focus:ring-1 focus:ring-[#0078D4] focus:outline-none">
+            <option value="Sprint 24" selected>Sprint 24 (Active - Oct 2026)</option>
+            <option value="Sprint 23">Sprint 23 (Closed)</option>
+            <option value="Sprint 22">Sprint 22 (Closed)</option>
+            <option value="Sprint 21">Sprint 21 (Closed)</option>
+            <option value="Sprint 20">Sprint 20 (Closed)</option>
+          </select>
+          <div class="mt-1.5 text-[10px] text-neutral-500 flex justify-between">
+            <span>Duration: 10 Days</span>
+            <span class="text-blue-700 font-medium">80% Time Elapsed</span>
+          </div>
+        </div>
+
+        <!-- Slicer 2: Team / Squad Radio/Checkboxes -->
+        <div class="bg-white p-3 rounded border border-neutral-200 shadow-2xs">
+          <label class="block font-bold text-neutral-700 mb-1.5 text-[11px] uppercase tracking-wide">
+            Delivery Squad
+          </label>
+          <div class="space-y-1.5" id="squadCheckboxes">
+            <label class="flex items-center space-x-2 cursor-pointer hover:bg-neutral-50 p-1 rounded">
+              <input type="checkbox" value="ALL" checked class="squad-filter rounded text-[#0078D4] focus:ring-0">
+              <span class="font-medium text-neutral-800">All Squads (Combined)</span>
+            </label>
+            <label class="flex items-center space-x-2 cursor-pointer hover:bg-neutral-50 p-1 rounded text-neutral-700">
+              <input type="checkbox" value="Frontend" class="squad-filter rounded text-[#0078D4] focus:ring-0">
+              <span>Frontend Experience (Web)</span>
+            </label>
+            <label class="flex items-center space-x-2 cursor-pointer hover:bg-neutral-50 p-1 rounded text-neutral-700">
+              <input type="checkbox" value="Backend" class="squad-filter rounded text-[#0078D4] focus:ring-0">
+              <span>Core Services & APIs</span>
+            </label>
+            <label class="flex items-center space-x-2 cursor-pointer hover:bg-neutral-50 p-1 rounded text-neutral-700">
+              <input type="checkbox" value="Platform" class="squad-filter rounded text-[#0078D4] focus:ring-0">
+              <span>Cloud & DevOps Platform</span>
+            </label>
+            <label class="flex items-center space-x-2 cursor-pointer hover:bg-neutral-50 p-1 rounded text-neutral-700">
+              <input type="checkbox" value="Mobile" class="squad-filter rounded text-[#0078D4] focus:ring-0">
+              <span>iOS & Android Native</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Slicer 3: Epic / Feature Toggle -->
+        <div class="bg-white p-3 rounded border border-neutral-200 shadow-2xs">
+          <label class="block font-bold text-neutral-700 mb-1.5 text-[11px] uppercase tracking-wide">
+            Epic Filter
+          </label>
+          <select id="epicSelect" class="w-full p-2 border border-neutral-300 rounded text-xs bg-white focus:ring-1 focus:ring-[#0078D4] focus:outline-none">
+            <option value="ALL">All Epics</option>
+            <option value="Checkout 2.0">Checkout 2.0 Modernization</option>
+            <option value="Cloud Auth">Cloud Auth & IAM</option>
+            <option value="Mobile Sync">Mobile Offline Sync</option>
+            <option value="Tech Debt">Technical Debt & Refactoring</option>
+          </select>
+        </div>
+
+        <!-- Slicer 4: Work Item Type -->
+        <div class="bg-white p-3 rounded border border-neutral-200 shadow-2xs">
+          <label class="block font-bold text-neutral-700 mb-1.5 text-[11px] uppercase tracking-wide">
+            Item Types
+          </label>
+          <div class="grid grid-cols-2 gap-1 text-xs">
+            <button class="type-filter-btn px-2 py-1 bg-[#0078D4] text-white rounded font-medium text-center" data-type="ALL">All</button>
+            <button class="type-filter-btn px-2 py-1 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 rounded font-medium text-center" data-type="Story">Stories</button>
+            <button class="type-filter-btn px-2 py-1 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 rounded font-medium text-center" data-type="Bug">Bugs</button>
+            <button class="type-filter-btn px-2 py-1 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 rounded font-medium text-center" data-type="Task">Tasks</button>
+          </div>
+        </div>
+
+        <!-- Summary Filter Meta Box -->
+        <div class="p-2.5 rounded bg-amber-50 border border-amber-200 text-amber-900 text-[11px] space-y-1">
+          <div class="font-bold flex items-center gap-1">
+            <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-600"></i> Fast Cross-Filtering
+          </div>
+          <p class="text-[10px] text-amber-800 leading-relaxed">
+            Selecting slicers dynamically recalculates burn rates, team velocity charts, and task tables instantaneously.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Filter Pane Footer -->
+      <div class="p-2.5 border-t border-[#E1DFDD] bg-neutral-100 text-center">
+        <button id="applyFiltersBtn" class="w-full bg-[#0078D4] hover:bg-[#106EBE] text-white py-1.5 px-3 rounded font-semibold text-xs shadow transition">
+          Apply Filter Matrix
+        </button>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ================= BOTTOM POWER BI PAGE TABS NAVIGATION ================= -->
+  <footer class="h-9 bg-[#EAE8E6] border-t border-[#D2D0CE] flex items-center justify-between px-3 z-30 select-none text-xs flex-shrink-0">
+    <!-- Left Navigation Tabs (Signature Power BI Desktop / Service Tab bar) -->
+    <div class="flex items-center space-x-1 h-full overflow-x-auto" id="pbiTabBar">
+      <button class="pbi-tab active h-full px-4 text-xs font-medium flex items-center gap-1.5 transition border-r border-[#D2D0CE]" data-target="tabContent-sprint">
+        <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+        <span>Sprint Overview</span>
+      </button>
+      <button class="pbi-tab h-full px-4 text-neutral-600 hover:text-neutral-900 hover:bg-[#DDDCDA] text-xs font-medium flex items-center gap-1.5 transition border-r border-[#D2D0CE]" data-target="tabContent-velocity">
+        <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+        <span>Velocity & Flow (CFD)</span>
+      </button>
+      <button class="pbi-tab h-full px-4 text-neutral-600 hover:text-neutral-900 hover:bg-[#DDDCDA] text-xs font-medium flex items-center gap-1.5 transition border-r border-[#D2D0CE]" data-target="tabContent-quality">
+        <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+        <span>Quality & Defects</span>
+      </button>
+      <button class="pbi-tab h-full px-4 text-neutral-600 hover:text-neutral-900 hover:bg-[#DDDCDA] text-xs font-medium flex items-center gap-1.5 transition border-r border-[#D2D0CE]" data-target="tabContent-roadmap">
+        <i data-lucide="map" class="w-3.5 h-3.5"></i>
+        <span>Release & Delivery Roadmap</span>
+      </button>
+      <button id="addTabBtn" class="px-2 text-neutral-500 hover:text-neutral-800 text-sm font-bold" title="Add Blank Report Page">+</button>
+    </div>
+
+    <!-- Right Controls: Zoom and Fullscreen -->
+    <div class="flex items-center space-x-3 text-neutral-600 text-xs">
+      <span class="hidden sm:inline-block text-[11px] text-neutral-500">Page 1 of 4</span>
+      <div class="flex items-center space-x-1 bg-white border border-[#D2D0CE] px-1.5 py-0.5 rounded">
+        <button id="zoomOut" class="hover:text-black font-bold px-1 text-xs">-</button>
+        <span class="text-[11px] font-medium" id="zoomLevel">100%</span>
+        <button id="zoomIn" class="hover:text-black font-bold px-1 text-xs">+</button>
+      </div>
+      <button id="fitScreenBtn" class="hover:text-black" title="Fit to screen">
+        <i data-lucide="maximize" class="w-3.5 h-3.5"></i>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Notification Toast Modal -->
+  <div id="toastNotification" class="fixed bottom-12 right-6 bg-neutral-900 text-white px-3.5 py-2 rounded shadow-xl text-xs flex items-center space-x-2 opacity-0 pointer-events-none transition-opacity duration-300 z-50">
+    <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toastMessage">Dashboard synchronized successfully.</span>
+  </div>
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    // -------------------------------------------------------------
+    // 1. DATA REPOSITORY & STATE MODEL
+    // -------------------------------------------------------------
+    const AGILE_DATA = {
+      sprints: {
+        "Sprint 24": {
+          completion: 88.4,
+          committedPoints: 130,
+          deliveredPoints: 115,
+          cycleTime: 4.8,
+          leadTime: 9.4,
+          wip: 14,
+          defects: 3,
+          density: 2.6,
+          burndown: {
+            days: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8', 'Day 9', 'Day 10'],
+            ideal: [130, 117, 104, 91, 78, 65, 52, 39, 26, 0],
+            actual: [130, 126, 114, 118, 98, 76, 54, 34, null, null] // Day 4 had scope injection
+          },
+          epics: {
+            labels: ['Checkout 2.0', 'Cloud Auth', 'Mobile Sync', 'Tech Debt'],
+            data: [42, 34, 28, 26],
+            colors: ['#0078D4', '#107C41', '#F2C811', '#D83B01']
+          },
+          workItems: [
+            { key: "DEV-1081", title: "Implement Apple Pay biometric token exchange", epic: "Checkout 2.0", squad: "Frontend", type: "Story", priority: "High", sp: 8, status: "Done", assignee: "Alex Rivera", cycle: "3.2d", pr: "#482" },
+            { key: "DEV-1082", title: "Upgrade JWT rotation to PKCE 2.1 protocol", epic: "Cloud Auth", squad: "Platform", type: "Task", priority: "Highest", sp: 5, status: "Done", assignee: "Priya Patel", cycle: "2.1d", pr: "#485" },
+            { key: "DEV-1084", title: "Intermittent SQLite thread deadlock in background sync", epic: "Mobile Sync", squad: "Mobile", type: "Bug", priority: "Critical", sp: 5, status: "In QA", assignee: "Liam Chen", cycle: "4.5d", pr: "#490" },
+            { key: "DEV-1085", title: "Optimize Redis session store eviction latency", epic: "Tech Debt", squad: "Backend", type: "Task", priority: "Medium", sp: 3, status: "Done", assignee: "Marcus Vance", cycle: "1.8d", pr: "#477" },
+            { key: "DEV-1088", title: "Build checkout fallback retry for webhook dropouts", epic: "Checkout 2.0", squad: "Backend", type: "Story", priority: "High", sp: 8, status: "Code Review", assignee: "Sarah Connor", cycle: "4.1d", pr: "#493" },
+            { key: "DEV-1090", title: "Refactor legacy user preferences ORM mapper", epic: "Tech Debt", squad: "Backend", type: "Task", priority: "Low", sp: 5, status: "In Progress", assignee: "Kenji Sato", cycle: "5.0d", pr: "Draft" },
+            { key: "DEV-1092", title: "Push notification token invalidation edge case", epic: "Mobile Sync", squad: "Mobile", type: "Bug", priority: "High", sp: 3, status: "In QA", assignee: "Elena Rostova", cycle: "2.4d", pr: "#494" },
+            { key: "DEV-1095", title: "Configure Grafana alerts for ingress packet loss", epic: "Cloud Auth", squad: "Platform", type: "Story", priority: "Medium", sp: 3, status: "To Do", assignee: "Priya Patel", cycle: "--", pr: "None" }
+          ]
+        },
+        "Sprint 23": {
+          completion: 94.2,
+          committedPoints: 120,
+          deliveredPoints: 113,
+          cycleTime: 4.5,
+          leadTime: 8.8,
+          wip: 10,
+          defects: 4,
+          density: 3.5,
+          burndown: {
+            days: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8', 'Day 9', 'Day 10'],
+            ideal: [120, 108, 96, 84, 72, 60, 48, 36, 24, 0],
+            actual: [120, 115, 101, 88, 70, 56, 42, 25, 12, 7]
+          },
+          epics: {
+            labels: ['Checkout 2.0', 'Cloud Auth', 'Mobile Sync', 'Tech Debt'],
+            data: [35, 40, 20, 25],
+            colors: ['#0078D4', '#107C41', '#F2C811', '#D83B01']
+          },
+          workItems: [
+            { key: "DEV-1040", title: "Implement PayPal Smart Button integration", epic: "Checkout 2.0", squad: "Frontend", type: "Story", priority: "High", sp: 8, status: "Done", assignee: "Alex Rivera", cycle: "3.5d", pr: "#450" },
+            { key: "DEV-1044", title: "Migrate Auth0 tenant schema to EU region", epic: "Cloud Auth", squad: "Platform", type: "Task", priority: "Critical", sp: 8, status: "Done", assignee: "Priya Patel", cycle: "4.0d", pr: "#452" },
+            { key: "DEV-1049", title: "Address memory leak on WebSocket reconnection", epic: "Mobile Sync", squad: "Mobile", type: "Bug", priority: "High", sp: 5, status: "Done", assignee: "Liam Chen", cycle: "3.1d", pr: "#458" }
+          ]
+        },
+        "Sprint 22": {
+          completion: 82.0,
+          committedPoints: 128,
+          deliveredPoints: 105,
+          cycleTime: 5.6,
+          leadTime: 11.2,
+          wip: 18,
+          defects: 7,
+          density: 6.6,
+          burndown: {
+            days: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8', 'Day 9', 'Day 10'],
+            ideal: [128, 115, 102, 89, 76, 64, 51, 38, 25, 0],
+            actual: [128, 125, 120, 110, 95, 85, 70, 55, 38, 23]
+          },
+          epics: {
+            labels: ['Checkout 2.0', 'Cloud Auth', 'Mobile Sync', 'Tech Debt'],
+            data: [30, 25, 40, 33],
+            colors: ['#0078D4', '#107C41', '#F2C811', '#D83B01']
+          },
+          workItems: [
+            { key: "DEV-998", title: "Setup Kafka event streaming infrastructure", epic: "Cloud Auth", squad: "Platform", type: "Story", priority: "High", sp: 13, status: "Done", assignee: "Priya Patel", cycle: "6.2d", pr: "#420" },
+            { key: "DEV-1002", title: "Fix cart state desynchronization on browser back", epic: "Checkout 2.0", squad: "Frontend", type: "Bug", priority: "Highest", sp: 5, status: "Done", assignee: "Alex Rivera", cycle: "2.9d", pr: "#425" }
+          ]
+        }
+      },
+      historicalVelocity: {
+        sprints: ['Sprint 19', 'Sprint 20', 'Sprint 21', 'Sprint 22', 'Sprint 23', 'Sprint 24'],
+        committed: [115, 120, 125, 128, 120, 130],
+        completed: [108, 116, 122, 105, 113, 115]
+      },
+      cfdData: {
+        labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8', 'Day 9', 'Day 10'],
+        backlog: [40, 36, 30, 24, 18, 12, 8, 4, 2, 0],
+        inDev: [15, 20, 22, 21, 19, 18, 14, 10, 6, 2],
+        codeReview: [4, 6, 8, 10, 12, 11, 10, 8, 5, 2],
+        qa: [2, 4, 7, 9, 11, 13, 12, 11, 8, 4],
+        done: [0, 4, 12, 21, 35, 52, 70, 89, 104, 115]
+      }
+    };
+
+    // Global Filter State
+    let currentSprintKey = "Sprint 24";
+    let selectedSquads = ["ALL"];
+    let selectedEpic = "ALL";
+    let selectedType = "ALL";
+    let tableSearchQuery = "";
+    let tableStatusFilter = "ALL";
+
+    // Chart References
+    let burndownChartInstance = null;
+    let epicChartInstance = null;
+    let velocityChartInstance = null;
+    let cfdChartInstance = null;
+    let stageDurationChartInstance = null;
+    let defectSeverityChartInstance = null;
+    let mttrBarChartInstance = null;
+
+    // -------------------------------------------------------------
+    // 2. CHART INITIALIZATIONS (Power BI Color & Layout standards)
+    // -------------------------------------------------------------
+    function initAllCharts() {
+      // 1. Burndown Chart
+      const ctxBurndown = document.getElementById('burndownChart').getContext('2d');
+      const sprintData = AGILE_DATA.sprints[currentSprintKey];
+
+      burndownChartInstance = new Chart(ctxBurndown, {
+        type: 'line',
+        data: {
+          labels: sprintData.burndown.days,
+          datasets: [
+            {
+              label: 'Ideal Trendline',
+              data: sprintData.burndown.ideal,
+              borderColor: '#A19F9D',
+              borderDash: [5, 5],
+              borderWidth: 2,
+              pointRadius: 0,
+              tension: 0.1,
+              fill: false
+            },
+            {
+              label: 'Actual Remaining Story Points',
+              data: sprintData.burndown.actual,
+              borderColor: '#0078D4',
+              backgroundColor: 'rgba(0, 120, 212, 0.12)',
+              borderWidth: 3,
+              pointBackgroundColor: '#0078D4',
+              pointBorderColor: '#ffffff',
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              fill: true,
+              tension: 0.2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#201F1E',
+              padding: 10,
+              cornerRadius: 4,
+              titleFont: { family: 'Segoe UI', size: 12 },
+              bodyFont: { family: 'Segoe UI', size: 11 }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: '#EDEBE9' },
+              title: { display: true, text: 'Story Points', font: { size: 11, weight: 'bold' }, color: '#605E5C' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#605E5C', font: { size: 11 } }
+            }
+          }
+        }
+      });
+
+      // 2. Epic Distribution Donut Chart
+      const ctxEpic = document.getElementById('epicDistributionChart').getContext('2d');
+      epicChartInstance = new Chart(ctxEpic, {
+        type: 'doughnut',
+        data: {
+          labels: sprintData.epics.labels,
+          datasets: [{
+            data: sprintData.epics.data,
+            backgroundColor: sprintData.epics.colors,
+            borderWidth: 2,
+            borderColor: '#FFFFFF'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '68%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#201F1E',
+              callbacks: {
+                label: function(context) {
+                  return ` ${context.label}: ${context.raw} Story Points`;
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // 3. Velocity Chart (Committed vs Delivered)
+      const ctxVelocity = document.getElementById('velocityChart').getContext('2d');
+      velocityChartInstance = new Chart(ctxVelocity, {
+        type: 'bar',
+        data: {
+          labels: AGILE_DATA.historicalVelocity.sprints,
+          datasets: [
+            {
+              label: 'Committed SP',
+              data: AGILE_DATA.historicalVelocity.committed,
+              backgroundColor: '#C8C6C4',
+              borderRadius: 3
+            },
+            {
+              label: 'Delivered SP',
+              data: AGILE_DATA.historicalVelocity.completed,
+              backgroundColor: '#107C41',
+              borderRadius: 3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              align: 'end',
+              labels: { boxWidth: 12, font: { family: 'Segoe UI', size: 11 } }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: '#EDEBE9' },
+              title: { display: true, text: 'Total Story Points', font: { size: 11 } }
+            },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+
+      // 4. Cumulative Flow Diagram (CFD)
+      const ctxCfd = document.getElementById('cfdChart').getContext('2d');
+      cfdChartInstance = new Chart(ctxCfd, {
+        type: 'line',
+        data: {
+          labels: AGILE_DATA.cfdData.labels,
+          datasets: [
+            {
+              label: 'Done',
+              data: AGILE_DATA.cfdData.done,
+              backgroundColor: '#107C41',
+              borderColor: '#0e6937',
+              fill: 'origin',
+              pointRadius: 0
+            },
+            {
+              label: 'In QA',
+              data: AGILE_DATA.cfdData.qa,
+              backgroundColor: '#008272',
+              borderColor: '#006c5e',
+              fill: '-1',
+              pointRadius: 0
+            },
+            {
+              label: 'Code Review',
+              data: AGILE_DATA.cfdData.codeReview,
+              backgroundColor: '#5C2D91',
+              borderColor: '#4d2679',
+              fill: '-1',
+              pointRadius: 0
+            },
+            {
+              label: 'In Dev',
+              data: AGILE_DATA.cfdData.inDev,
+              backgroundColor: '#0078D4',
+              borderColor: '#006bbd',
+              fill: '-1',
+              pointRadius: 0
+            },
+            {
+              label: 'Backlog / To Do',
+              data: AGILE_DATA.cfdData.backlog,
+              backgroundColor: '#D2D0CE',
+              borderColor: '#b4b2af',
+              fill: '-1',
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { boxWidth: 10, font: { size: 10 } }
+            }
+          },
+          scales: {
+            y: {
+              stacked: true,
+              grid: { color: '#EDEBE9' },
+              title: { display: true, text: 'Total Work Items' }
+            },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+
+      // 5. Stage Duration Breakdown Chart
+      const ctxStage = document.getElementById('stageDurationChart').getContext('2d');
+      stageDurationChartInstance = new Chart(ctxStage, {
+        type: 'bar',
+        data: {
+          labels: ['Checkout 2.0', 'Cloud Auth', 'Mobile Sync', 'Tech Debt / Infra'],
+          datasets: [
+            { label: 'Backlog & Spec (h)', data: [12, 18, 14, 8], backgroundColor: '#8A8886' },
+            { label: 'Active Coding (h)', data: [26, 30, 22, 16], backgroundColor: '#0078D4' },
+            { label: 'Peer Review & PR (h)', data: [8, 10, 14, 6], backgroundColor: '#5C2D91' },
+            { label: 'QA / Automated Regression (h)', data: [10, 12, 18, 5], backgroundColor: '#008272' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: 'y',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } }
+          },
+          scales: {
+            x: { stacked: true, grid: { color: '#EDEBE9' }, title: { display: true, text: 'Hours Elapsed' } },
+            y: { stacked: true, grid: { display: false } }
+          }
+        }
+      });
+
+      // 6. Defect Severity Donut
+      const ctxDefect = document.getElementById('defectSeverityChart').getContext('2d');
+      defectSeverityChartInstance = new Chart(ctxDefect, {
+        type: 'doughnut',
+        data: {
+          labels: ['Critical (Sev 1)', 'Major (Sev 2)', 'Minor (Sev 3)', 'Cosmetic (Sev 4)'],
+          datasets: [{
+            data: [0, 2, 4, 3],
+            backgroundColor: ['#A80000', '#D83B01', '#F2C811', '#0078D4'],
+            borderWidth: 2,
+            borderColor: '#FFFFFF'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+
+      // 7. MTTR Bar Chart
+      const ctxMttr = document.getElementById('mttrBarChart').getContext('2d');
+      mttrBarChartInstance = new Chart(ctxMttr, {
+        type: 'bar',
+        data: {
+          labels: ['Frontend Web', 'Core APIs', 'Cloud DevOps', 'iOS & Android Native'],
+          datasets: [{
+            label: 'MTTR in Hours',
+            data: [8.5, 12.2, 5.4, 18.6],
+            backgroundColor: ['#0078D4', '#107C41', '#008272', '#D83B01'],
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: '#EDEBE9' },
+              title: { display: true, text: 'Hours to Resolve' }
+            },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    // -------------------------------------------------------------
+    // 3. UI RENDERING & DATA FILTERING LOGIC
+    // -------------------------------------------------------------
+    function renderDashboard() {
+      const activeData = AGILE_DATA.sprints[currentSprintKey] || AGILE_DATA.sprints["Sprint 24"];
+
+      // 1. Update KPI Card Values
+      document.getElementById('kpiCompletion').innerText = `${activeData.completion}%`;
+      document.getElementById('kpiCompletionBar').style.width = `${activeData.completion}%`;
+      document.getElementById('kpiVelocity').innerHTML = `${activeData.deliveredPoints} <span class="text-xs font-normal text-neutral-500">pts</span>`;
+      document.getElementById('kpiCommitted').innerText = `Committed: ${activeData.committedPoints}`;
+      document.getElementById('kpiPointsSub').innerText = `${activeData.deliveredPoints} / ${activeData.committedPoints} pts`;
+      document.getElementById('kpiSayDo').innerText = `${((activeData.deliveredPoints / activeData.committedPoints) * 100).toFixed(1)}%`;
+      document.getElementById('kpiCycleTime').innerHTML = `${activeData.cycleTime} <span class="text-xs font-normal text-neutral-500">days</span>`;
+      document.getElementById('kpiLeadTime').innerText = `${activeData.leadTime} days`;
+      document.getElementById('kpiWip').innerHTML = `${activeData.wip} <span class="text-xs font-normal text-neutral-500">items</span>`;
+      document.getElementById('kpiDefects').innerHTML = `${activeData.defects} <span class="text-xs font-normal text-neutral-500">bugs</span>`;
+      document.getElementById('kpiDensity').innerText = activeData.density.toString();
+
+      // 2. Update Charts
+      if (burndownChartInstance) {
+        burndownChartInstance.data.labels = activeData.burndown.days;
+        burndownChartInstance.data.datasets[0].data = activeData.burndown.ideal;
+        burndownChartInstance.data.datasets[1].data = activeData.burndown.actual;
+        burndownChartInstance.update();
+      }
+
+      if (epicChartInstance) {
+        epicChartInstance.data.labels = activeData.epics.labels;
+        epicChartInstance.data.datasets[0].data = activeData.epics.data;
+        epicChartInstance.data.datasets[0].backgroundColor = activeData.epics.colors;
+        epicChartInstance.update();
+      }
+
+      // 3. Update Active Filter Breadcrumbs in Ribbon
+      renderActiveSlicerPills();
+
+      // 4. Update Work Items Table
+      renderWorkItemsTable(activeData.workItems);
+    }
+
+    // Render Work Items Table with filtering
+    function renderWorkItemsTable(items) {
+      const tbody = document.getElementById('workItemsTableBody');
+      tbody.innerHTML = '';
+
+      const filtered = items.filter(item => {
+        // Squad check
+        if (!selectedSquads.includes("ALL") && !selectedSquads.includes(item.squad)) {
+          return false;
+        }
+        // Epic check
+        if (selectedEpic !== "ALL" && item.epic !== selectedEpic) {
+          return false;
+        }
+        // Type check
+        if (selectedType !== "ALL" && item.type !== selectedType) {
+          return false;
+        }
+        // Table Status check
+        if (tableStatusFilter !== "ALL" && item.status !== tableStatusFilter) {
+          return false;
+        }
+        // Text search
+        if (tableSearchQuery.trim() !== "") {
+          const q = tableSearchQuery.toLowerCase();
+          const match = item.key.toLowerCase().includes(q) ||
+                        item.title.toLowerCase().includes(q) ||
+                        item.assignee.toLowerCase().includes(q) ||
+                        item.epic.toLowerCase().includes(q);
+          if (!match) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-neutral-400">No work items match current filter criteria.</td></tr>`;
+        document.getElementById('tableRecordCount').innerText = `Showing 0 of ${items.length} items`;
+        return;
+      }
+
+      filtered.forEach(item => {
+        // Status Badge Style
+        let statusBadge = "bg-neutral-100 text-neutral-800 border-neutral-300";
+        if (item.status === 'Done') statusBadge = "bg-emerald-50 text-emerald-800 border-emerald-300";
+        else if (item.status === 'In QA') statusBadge = "bg-teal-50 text-teal-800 border-teal-300";
+        else if (item.status === 'Code Review') statusBadge = "bg-purple-50 text-purple-800 border-purple-300";
+        else if (item.status === 'In Progress') statusBadge = "bg-blue-50 text-blue-800 border-blue-300";
+
+        // Priority Style
+        let prioColor = "text-neutral-600";
+        if (item.priority === "Critical" || item.priority === "Highest") prioColor = "text-red-600 font-bold";
+        else if (item.priority === "High") prioColor = "text-orange-600 font-semibold";
+
+        // Type icon / badge
+        let typeBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-800 font-medium">${item.type}</span>`;
+        if (item.type === 'Bug') {
+          typeBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] bg-red-100 text-red-800 font-bold flex items-center gap-0.5 w-max"><i data-lucide="bug" class="w-3 h-3"></i> Bug</span>`;
+        } else if (item.type === 'Task') {
+          typeBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] bg-neutral-200 text-neutral-800 font-medium">Task</span>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-blue-50/40 transition-colors";
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-semibold text-[#0078D4] hover:underline cursor-pointer">${item.key}</td>
+          <td class="py-2.5 px-3 font-medium text-neutral-900 max-w-xs truncate" title="${item.title}">${item.title}</td>
+          <td class="py-2.5 px-3 text-neutral-600">${item.epic}</td>
+          <td class="py-2.5 px-3">${typeBadge}</td>
+          <td class="py-2.5 px-3 ${prioColor}">${item.priority}</td>
+          <td class="py-2.5 px-3 text-center font-bold text-neutral-800">${item.sp}</td>
+          <td class="py-2.5 px-3">
+            <span class="px-2 py-0.5 rounded border text-[11px] font-semibold inline-block ${statusBadge}">
+              ${item.status}
+            </span>
+          </td>
+          <td class="py-2.5 px-3 text-neutral-700 flex items-center gap-1.5">
+            <span class="w-5 h-5 rounded-full bg-neutral-200 text-neutral-700 flex items-center justify-center font-bold text-[9px]">
+              ${item.assignee.split(' ').map(n=>n[0]).join('')}
+            </span>
+            <span>${item.assignee}</span>
+          </td>
+          <td class="py-2.5 px-3 text-center text-neutral-600 font-mono text-[11px]">${item.cycle}</td>
+          <td class="py-2.5 px-3">
+            ${item.pr.startsWith('#') 
+              ? `<span class="font-mono text-[11px] text-[#0078D4] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 hover:underline cursor-pointer">${item.pr}</span>` 
+              : `<span class="text-neutral-400 text-[11px]">${item.pr}</span>`}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('tableRecordCount').innerText = `Showing ${filtered.length} of ${items.length} items`;
+      lucide.createIcons();
+    }
+
+    // Render Filter Breadcrumb Badges in Top Ribbon
+    function renderActiveSlicerPills() {
+      const container = document.getElementById('activeSlicerPills');
+      container.innerHTML = '';
+
+      const pills = [
+        { label: `Sprint: ${currentSprintKey}`, isDefault: currentSprintKey === 'Sprint 24' },
+        { label: `Squads: ${selectedSquads.join(', ')}`, isDefault: selectedSquads.includes('ALL') },
+        { label: `Epic: ${selectedEpic}`, isDefault: selectedEpic === 'ALL' },
+        { label: `Type: ${selectedType}`, isDefault: selectedType === 'ALL' }
+      ];
+
+      pills.forEach(pill => {
+        const span = document.createElement('span');
+        span.className = `px-2 py-0.5 rounded text-[11px] font-medium flex items-center gap-1 border ${
+          pill.isDefault 
+            ? 'bg-[#3b3a39] text-neutral-300 border-[#4a4947]' 
+            : 'bg-[#F2C811] text-[#1B1A19] border-[#e0b605] font-semibold'
+        }`;
+        span.innerHTML = `${pill.label}`;
+        container.appendChild(span);
+      });
+    }
+
+    function showNotification(message) {
+      const toast = document.getElementById('toastNotification');
+      document.getElementById('toastMessage').innerText = message;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2500);
+    }
+
+    // -------------------------------------------------------------
+    // 4. EVENT LISTENERS & USER INTERACTIONS
+    // -------------------------------------------------------------
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize icons
+      lucide.createIcons();
+
+      // Initialize Power BI charts
+      initAllCharts();
+      renderDashboard();
+
+      // Page Tab Switching
+      const tabs = document.querySelectorAll('.pbi-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+
+          const targetId = tab.getAttribute('data-target');
+          const allContents = [
+            'tabContent-sprint',
+            'tabContent-velocity',
+            'tabContent-quality',
+            'tabContent-roadmap'
+          ];
+
+          allContents.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+              if (id === targetId) {
+                el.classList.remove('hidden');
+              } else {
+                el.classList.add('hidden');
+              }
+            }
+          });
+
+          // Trigger chart resize on tab reveal to prevent render squashing
+          window.dispatchEvent(new Event('resize'));
+        });
+      });
+
+      // Filter Pane Collapse / Expand
+      const filterPane = document.getElementById('filterPane');
+      const toggleFilterPaneBtn = document.getElementById('toggleFilterPaneBtn');
+      const filterPaneBtnText = document.getElementById('filterPaneBtnText');
+      const collapseFiltersCross = document.getElementById('collapseFiltersCross');
+
+      function toggleFilterPane() {
+        if (filterPane.classList.contains('hidden')) {
+          filterPane.classList.remove('hidden');
+          filterPaneBtnText.innerText = 'Hide Filters';
+        } else {
+          filterPane.classList.add('hidden');
+          filterPaneBtnText.innerText = 'Show Filters';
+        }
+      }
+
+      toggleFilterPaneBtn.addEventListener('click', toggleFilterPane);
+      collapseFiltersCross.addEventListener('click', toggleFilterPane);
+
+      // Slicer Controls Binding
+      const sprintSelect = document.getElementById('sprintSelect');
+      sprintSelect.addEventListener('change', (e) => {
+        currentSprintKey = e.target.value;
+        renderDashboard();
+        showNotification(`Applied filter: ${currentSprintKey}`);
+      });
+
+      const epicSelect = document.getElementById('epicSelect');
+      epicSelect.addEventListener('change', (e) => {
+        selectedEpic = e.target.value;
+        renderDashboard();
+      });
+
+      // Squad checkboxes
+      const squadBoxes = document.querySelectorAll('.squad-filter');
+      squadBoxes.forEach(box => {
+        box.addEventListener('change', (e) => {
+          const val = e.target.value;
+          if (val === 'ALL' && e.target.checked) {
+            squadBoxes.forEach(b => { if(b.value !== 'ALL') b.checked = false; });
+            selectedSquads = ['ALL'];
+          } else {
+            const allCheckbox = Array.from(squadBoxes).find(b => b.value === 'ALL');
+            if (allCheckbox) allCheckbox.checked = false;
+
+            const checkedBoxes = Array.from(squadBoxes).filter(b => b.checked && b.value !== 'ALL').map(b => b.value);
+            selectedSquads = checkedBoxes.length > 0 ? checkedBoxes : ['ALL'];
+            if (selectedSquads.includes('ALL') && allCheckbox) allCheckbox.checked = true;
+          }
+          renderDashboard();
+        });
+      });
+
+      // Work Item Type Pills
+      const typeButtons = document.querySelectorAll('.type-filter-btn');
+      typeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          typeButtons.forEach(b => {
+            b.classList.remove('bg-[#0078D4]', 'text-white');
+            b.classList.add('bg-neutral-100', 'text-neutral-700');
+          });
+          btn.classList.add('bg-[#0078D4]', 'text-white');
+          btn.classList.remove('bg-neutral-100', 'text-neutral-700');
+
+          selectedType = btn.getAttribute('data-type');
+          renderDashboard();
+        });
+      });
+
+      // Table Specific Filters
+      const tableSearch = document.getElementById('tableSearch');
+      tableSearch.addEventListener('input', (e) => {
+        tableSearchQuery = e.target.value;
+        renderWorkItemsTable(AGILE_DATA.sprints[currentSprintKey].workItems);
+      });
+
+      const statusFilterTable = document.getElementById('statusFilterTable');
+      statusFilterTable.addEventListener('change', (e) => {
+        tableStatusFilter = e.target.value;
+        renderWorkItemsTable(AGILE_DATA.sprints[currentSprintKey].workItems);
+      });
+
+      // Clear Filters Button
+      document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+        currentSprintKey = "Sprint 24";
+        sprintSelect.value = "Sprint 24";
+        selectedSquads = ["ALL"];
+        squadBoxes.forEach(b => b.checked = (b.value === 'ALL'));
+        selectedEpic = "ALL";
+        epicSelect.value = "ALL";
+        selectedType = "ALL";
+        tableSearch.value = "";
+        tableSearchQuery = "";
+        statusFilterTable.value = "ALL";
+        tableStatusFilter = "ALL";
+
+        typeButtons.forEach(b => {
+          if (b.getAttribute('data-type') === 'ALL') {
+            b.classList.add('bg-[#0078D4]', 'text-white');
+            b.classList.remove('bg-neutral-100', 'text-neutral-700');
+          } else {
+            b.classList.remove('bg-[#0078D4]', 'text-white');
+            b.classList.add('bg-neutral-100', 'text-neutral-700');
+          }
+        });
+
+        renderDashboard();
+        showNotification("All slicers reset to default.");
+      });
+
+      // Apply button in filter pane
+      document.getElementById('applyFiltersBtn').addEventListener('click', () => {
+        renderDashboard();
+        showNotification("Filter matrix calculated & refreshed.");
+      });
+
+      // Action Ribbon Buttons
+      document.getElementById('refreshBtn').addEventListener('click', () => {
+        const btn = document.getElementById('refreshBtn');
+        btn.classList.add('animate-pulse');
+        document.getElementById('lastRefreshedTime').innerText = "Syncing...";
+        setTimeout(() => {
+          btn.classList.remove('animate-pulse');
+          const now = new Date();
+          document.getElementById('lastRefreshedTime').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          showNotification("Dataset recomputed from enterprise data lake.");
+        }, 900);
+      });
+
+      document.getElementById('exportBtn').addEventListener('click', () => {
+        showNotification("Exporting dashboard report to PDF layout...");
+        setTimeout(() => {
+          window.print();
+        }, 600);
+      });
+
+      // Zoom Controls (Visual feedback only)
+      let currentZoom = 100;
+      document.getElementById('zoomIn').addEventListener('click', () => {
+        if (currentZoom < 140) {
+          currentZoom += 10;
+          document.getElementById('zoomLevel').innerText = `${currentZoom}%`;
+          document.getElementById('mainCanvas').style.zoom = `${currentZoom}%`;
+        }
+      });
+
+      document.getElementById('zoomOut').addEventListener('click', () => {
+        if (currentZoom > 70) {
+          currentZoom -= 10;
+          document.getElementById('zoomLevel').innerText = `${currentZoom}%`;
+          document.getElementById('mainCanvas').style.zoom = `${currentZoom}%`;
+        }
+      });
+
+      document.getElementById('fitScreenBtn').addEventListener('click', () => {
+        currentZoom = 100;
+        document.getElementById('zoomLevel').innerText = `100%`;
+        document.getElementById('mainCanvas').style.zoom = `100%`;
+        showNotification("View reset to 100% fit.");
+      });
+
+      // Mock Add Tab button
+      document.getElementById('addTabBtn').addEventListener('click', () => {
+        showNotification("Power BI Report Authoring Mode is locked by Governance Policy.");
+      });
+    });
+  </script>
+</body>
+</html>
